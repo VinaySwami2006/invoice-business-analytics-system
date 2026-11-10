@@ -1,4 +1,5 @@
 import sqlite3
+from contextlib import closing
 from pathlib import Path
 
 # Project root directory
@@ -17,13 +18,32 @@ def get_connection():
 
 
 def initialize_database():
-    """Create the required database tables."""
+    """Create all application tables if they do not already exist."""
 
-    with get_connection() as connection:
-        cursor = connection.cursor()
-
-                    # Invoice master table
-        cursor.execute("""
+    with closing(get_connection()) as connection:
+        connection.execute("""
+            CREATE TABLE IF NOT EXISTS customers (
+                customer_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                customer_name TEXT NOT NULL,
+                phone TEXT,
+                email TEXT,
+                city TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        connection.execute("""
+            CREATE TABLE IF NOT EXISTS products (
+                product_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                product_name TEXT NOT NULL,
+                category TEXT,
+                unit_price REAL NOT NULL DEFAULT 0
+                    CHECK (unit_price >= 0),
+                stock_quantity INTEGER NOT NULL DEFAULT 0
+                    CHECK (stock_quantity >= 0),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        connection.execute("""
             CREATE TABLE IF NOT EXISTS invoices (
                 invoice_id INTEGER PRIMARY KEY AUTOINCREMENT,
                 invoice_number TEXT UNIQUE NOT NULL,
@@ -38,9 +58,7 @@ def initialize_database():
                     REFERENCES customers(customer_id)
             )
         """)
-
-        # Invoice items table
-        cursor.execute("""
+        connection.execute("""
             CREATE TABLE IF NOT EXISTS invoice_items (
                 item_id INTEGER PRIMARY KEY AUTOINCREMENT,
                 invoice_id INTEGER NOT NULL,
@@ -55,12 +73,7 @@ def initialize_database():
                     REFERENCES products(product_id)
             )
         """)
-        connection.commit()
-
-
-if __name__ == "__main__":
-    initialize_database(        # Packing list tracking table
-        cursor.execute("""
+        connection.execute("""
             CREATE TABLE IF NOT EXISTS packing_lists (
                 packing_id INTEGER PRIMARY KEY AUTOINCREMENT,
                 invoice_id INTEGER NOT NULL UNIQUE,
@@ -77,6 +90,11 @@ if __name__ == "__main__":
                 FOREIGN KEY (invoice_id)
                     REFERENCES invoices(invoice_id)
             )
-        """))
+        """)
+        connection.commit()
+
+
+if __name__ == "__main__":
+    initialize_database()
     print("Database initialized successfully!")
     print(f"Database location: {DB_PATH}")

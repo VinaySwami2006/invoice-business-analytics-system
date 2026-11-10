@@ -125,11 +125,27 @@ python -m streamlit run app.py
 
 Streamlit will provide a local URL in the terminal. Open that URL in your browser to use the application.
 
+## Deploying to Streamlit Community Cloud
+
+This project uses Streamlit and should be deployed to a Streamlit-compatible host,
+not as a Vercel Python function.
+
+1. Push the project to a GitHub repository.
+2. In [Streamlit Community Cloud](https://share.streamlit.io/), create an app from
+   that repository and select `app.py` as the entry point.
+3. Deploy. Streamlit Cloud installs the packages listed in `requirements.txt`.
+
+The app creates its SQLite tables when it starts. SQLite data is stored on the
+app's local filesystem and is not durable across all redeployments or host
+restarts. Use a persistent database service for business data that must be kept.
+
 ## Database
 
 The application uses SQLite to store business information such as customers, products, invoices, and invoice items.
 
-The database is managed locally by the application.
+The application initializes its tables on startup. The database file is local to
+the running environment; deploy to a host with persistent storage or use an
+external database if the data must survive restarts and redeployments.
 
 ## Project Purpose
 
