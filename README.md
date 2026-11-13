@@ -157,8 +157,8 @@ Vercel deploys the FastAPI backend only; it does not host the Streamlit UI. The
 try to load the Streamlit `app.py` as a Python function.
 
 To deploy, import this GitHub repository into Vercel and deploy from the
-repository root. The API's interactive documentation is available at
-`/docs` on the resulting deployment.
+repository root. The customer and inventory workspace is available at the
+deployment root; the API's interactive documentation is available at `/docs`.
 
 Vercel installs the API-only dependencies from `requirements.txt`; the
 Streamlit UI packages are listed separately in `streamlit-requirements.txt`.

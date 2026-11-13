@@ -1,0 +1,708 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f6f7fb">
+  <title>Ledgerly | Invoice workspace</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #171923;
+      --muted: #777b89;
+      --line: #ececf1;
+      --paper: #fff;
+      --canvas: #f6f7fb;
+      --purple: #6f5bea;
+      --purple-dark: #5846ce;
+      --purple-soft: #f0edff;
+      --green: #23876a;
+      --green-soft: #e8f7f1;
+      --amber: #a76b15;
+      --amber-soft: #fff4df;
+      --red: #c24952;
+      --red-soft: #fff0f0;
+      --shadow: 0 12px 35px rgba(27, 29, 47, .055);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--canvas);
+      color: var(--ink);
+      font: 14px/1.5 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    button, input, select { font: inherit; }
+    button { cursor: pointer; }
+
+    .shell { display: flex; min-height: 100vh; }
+
+    .sidebar {
+      background: #fff;
+      border-right: 1px solid var(--line);
+      display: flex;
+      flex: 0 0 246px;
+      flex-direction: column;
+      padding: 27px 16px 18px;
+    }
+
+    .brand {
+      align-items: center;
+      display: flex;
+      gap: 11px;
+      margin: 0 8px 39px;
+    }
+
+    .brand-mark {
+      align-items: center;
+      background: var(--purple);
+      border-radius: 12px;
+      color: white;
+      display: inline-flex;
+      font-size: 19px;
+      height: 39px;
+      justify-content: center;
+      width: 39px;
+    }
+
+    .brand-name { font-size: 17px; font-weight: 750; letter-spacing: -.5px; }
+    .brand-caption { color: var(--muted); font-size: 11px; margin-top: 1px; }
+    .nav-label { color: #a2a4ae; font-size: 10px; font-weight: 750; letter-spacing: 1.15px; margin: 0 10px 10px; text-transform: uppercase; }
+    .nav { display: grid; gap: 5px; }
+
+    .nav-button {
+      align-items: center;
+      background: transparent;
+      border: 0;
+      border-radius: 9px;
+      color: #666a78;
+      display: flex;
+      gap: 12px;
+      padding: 11px 12px;
+      text-align: left;
+      transition: background .16s, color .16s;
+      width: 100%;
+    }
+
+    .nav-button:hover { background: #f7f6fc; color: var(--ink); }
+    .nav-button.active { background: var(--purple-soft); color: var(--purple-dark); font-weight: 650; }
+    .nav-icon { font-size: 17px; line-height: 1; text-align: center; width: 19px; }
+    .sidebar-bottom { margin-top: auto; }
+    .local-note { background: #f8f8fb; border: 1px solid var(--line); border-radius: 10px; color: var(--muted); font-size: 11px; line-height: 1.6; padding: 12px; }
+    .local-note strong { color: #4a4d5a; display: block; font-size: 12px; margin-bottom: 3px; }
+
+    .main { flex: 1; min-width: 0; }
+
+    .topbar {
+      align-items: center;
+      background: rgba(255,255,255,.92);
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      height: 70px;
+      justify-content: space-between;
+      padding: 0 38px;
+      position: sticky;
+      top: 0;
+      z-index: 4;
+    }
+
+    .crumb { color: var(--muted); font-size: 12px; }
+    .crumb strong { color: var(--ink); font-weight: 650; }
+    .top-actions { align-items: center; display: flex; gap: 14px; }
+    .avatar { align-items: center; background: #e6e1ff; border-radius: 50%; color: #5746c8; display: inline-flex; font-size: 12px; font-weight: 750; height: 34px; justify-content: center; width: 34px; }
+    .today { color: var(--muted); font-size: 12px; }
+
+    .content { margin: 0 auto; max-width: 1380px; padding: 34px 38px 55px; }
+    .page { display: none; }
+    .page.active { display: block; }
+    .page-heading { align-items: flex-end; display: flex; justify-content: space-between; margin-bottom: 25px; }
+    .eyebrow { color: var(--purple); font-size: 11px; font-weight: 750; letter-spacing: .8px; margin-bottom: 5px; text-transform: uppercase; }
+    h1 { font-size: clamp(24px, 3vw, 31px); letter-spacing: -1.1px; line-height: 1.2; margin: 0; }
+    .page-description { color: var(--muted); margin: 7px 0 0; }
+
+    .button {
+      align-items: center;
+      background: var(--purple);
+      border: 1px solid var(--purple);
+      border-radius: 8px;
+      color: white;
+      display: inline-flex;
+      font-size: 12px;
+      font-weight: 650;
+      gap: 7px;
+      justify-content: center;
+      min-height: 38px;
+      padding: 0 14px;
+      transition: background .15s, transform .15s;
+    }
+
+    .button:hover { background: var(--purple-dark); transform: translateY(-1px); }
+    .button.secondary { background: white; border-color: var(--line); color: #555969; }
+    .button.secondary:hover { background: #f8f8fb; }
+    .button.danger { background: white; border-color: #f4dadd; color: var(--red); }
+    .button.danger:hover { background: var(--red-soft); }
+    .button.small { font-size: 11px; min-height: 30px; padding: 0 9px; }
+    .button:disabled { cursor: not-allowed; opacity: .6; transform: none; }
+
+    .metric-grid { display: grid; gap: 15px; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-bottom: 19px; }
+    .metric, .panel, .table-card { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); }
+    .metric { min-height: 130px; padding: 18px 19px; }
+    .metric-top { align-items: center; color: var(--muted); display: flex; font-size: 12px; justify-content: space-between; }
+    .metric-icon { align-items: center; background: var(--purple-soft); border-radius: 9px; color: var(--purple); display: inline-flex; font-size: 16px; height: 34px; justify-content: center; width: 34px; }
+    .metric-value { font-size: 26px; font-weight: 740; letter-spacing: -.8px; margin-top: 14px; }
+    .metric-foot { color: #a0a2ac; font-size: 11px; margin-top: 1px; }
+    .dashboard-grid { display: grid; gap: 17px; grid-template-columns: minmax(0, 1.55fr) minmax(280px, .9fr); }
+    .panel { padding: 19px; }
+    .panel-heading { align-items: flex-start; display: flex; justify-content: space-between; margin-bottom: 17px; }
+    .panel-title { font-size: 14px; font-weight: 700; }
+    .panel-subtitle { color: var(--muted); font-size: 11px; margin-top: 3px; }
+    .text-button { background: none; border: 0; color: var(--purple-dark); font-size: 11px; font-weight: 650; padding: 4px; }
+    .text-button:hover { text-decoration: underline; }
+    .chart { align-items: flex-end; border-bottom: 1px solid var(--line); display: flex; gap: 14px; height: 201px; justify-content: space-around; padding: 18px 8px 0; }
+    .chart-column { align-items: center; display: flex; flex: 1; flex-direction: column; height: 100%; justify-content: flex-end; max-width: 55px; }
+    .chart-bar { background: linear-gradient(180deg, #947fff, #6855e6); border-radius: 6px 6px 2px 2px; min-height: 5px; transition: height .25s; width: 100%; }
+    .chart-month { color: #9699a4; font-size: 10px; margin-top: 7px; }
+    .chart-value { color: #747786; font-size: 9px; margin-bottom: 5px; white-space: nowrap; }
+    .stock-list { display: grid; gap: 13px; }
+    .stock-row { align-items: center; display: flex; gap: 10px; }
+    .stock-avatar { align-items: center; background: #f1efff; border-radius: 9px; color: #6858ce; display: flex; flex: 0 0 35px; font-size: 12px; font-weight: 700; height: 35px; justify-content: center; }
+    .stock-info { flex: 1; min-width: 0; }
+    .stock-name { font-size: 12px; font-weight: 650; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .stock-category { color: var(--muted); font-size: 10px; margin-top: 2px; }
+    .stock-count { background: var(--amber-soft); border-radius: 20px; color: var(--amber); font-size: 10px; font-weight: 700; padding: 4px 8px; white-space: nowrap; }
+
+    .table-card { overflow: hidden; }
+    .table-toolbar { align-items: center; border-bottom: 1px solid var(--line); display: flex; gap: 12px; justify-content: space-between; padding: 15px 17px; }
+    .search { background: #fbfbfd; border: 1px solid var(--line); border-radius: 7px; color: var(--ink); font-size: 12px; min-height: 35px; outline: none; padding: 0 11px; width: min(250px, 50vw); }
+    .search:focus, input:focus, select:focus { border-color: #b6aaff; box-shadow: 0 0 0 3px rgba(111,91,234,.1); outline: none; }
+    .table-wrap { overflow-x: auto; }
+    table { border-collapse: collapse; min-width: 620px; width: 100%; }
+    th { background: #fcfcfe; color: #9295a1; font-size: 10px; font-weight: 700; letter-spacing: .45px; padding: 11px 16px; text-align: left; text-transform: uppercase; white-space: nowrap; }
+    td { border-top: 1px solid #f0f0f4; color: #4e5260; font-size: 12px; padding: 12px 16px; vertical-align: middle; }
+    tbody tr:hover { background: #fdfdff; }
+    .cell-main { color: var(--ink); font-weight: 650; }
+    .cell-sub { color: #9a9ca6; font-size: 10px; margin-top: 2px; }
+    .row-actions { display: flex; gap: 6px; justify-content: flex-end; }
+    .table-empty { color: #9699a4; padding: 32px 16px; text-align: center; }
+    .status { border-radius: 20px; display: inline-flex; font-size: 10px; font-weight: 700; padding: 4px 9px; white-space: nowrap; }
+    .status.completed, .status.packed { background: var(--green-soft); color: var(--green); }
+    .status.pending { background: var(--amber-soft); color: var(--amber); }
+    .status.dispatched { background: var(--purple-soft); color: var(--purple-dark); }
+    .status.low { background: var(--red-soft); color: var(--red); }
+    .table-select { background: white; border: 1px solid var(--line); border-radius: 6px; color: #555969; font-size: 11px; padding: 6px; }
+    .detail-row td { background: #faf9ff; color: #686b77; white-space: normal; }
+    .detail-items { display: grid; gap: 6px; }
+
+    .modal-backdrop { align-items: center; background: rgba(20,21,32,.42); display: none; inset: 0; justify-content: center; padding: 18px; position: fixed; z-index: 10; }
+    .modal-backdrop.open { display: flex; }
+    .modal { background: white; border-radius: 14px; box-shadow: 0 25px 80px rgba(22,22,40,.22); max-height: min(90vh, 780px); max-width: 610px; overflow: auto; padding: 22px; width: 100%; }
+    .modal-head { align-items: flex-start; display: flex; justify-content: space-between; margin-bottom: 19px; }
+    .modal-title { font-size: 18px; font-weight: 720; letter-spacing: -.4px; }
+    .modal-description { color: var(--muted); font-size: 11px; margin-top: 3px; }
+    .close-button { background: #f5f5f8; border: 0; border-radius: 7px; color: #777986; font-size: 18px; height: 31px; width: 31px; }
+    .form-grid { display: grid; gap: 14px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .field { display: grid; gap: 6px; }
+    .field.full { grid-column: 1 / -1; }
+    .field label { color: #565967; font-size: 11px; font-weight: 650; }
+    .field input, .field select { background: white; border: 1px solid #e6e6ec; border-radius: 7px; color: var(--ink); min-height: 39px; padding: 0 10px; width: 100%; }
+    .form-footer { display: flex; justify-content: flex-end; margin-top: 20px; }
+    .invoice-items { display: grid; gap: 9px; margin: 13px 0; }
+    .invoice-item { align-items: end; display: grid; gap: 8px; grid-template-columns: minmax(0, 1fr) 100px 34px; }
+    .invoice-item .field { gap: 4px; }
+    .invoice-item label { color: #777b89; font-size: 10px; }
+    .remove-item { background: var(--red-soft); border: 0; border-radius: 7px; color: var(--red); height: 39px; }
+    .invoice-summary { background: #faf9ff; border-radius: 9px; color: #656878; display: flex; font-size: 12px; justify-content: space-between; margin-top: 13px; padding: 11px 13px; }
+    .invoice-summary strong { color: var(--ink); font-size: 14px; }
+    .toast { background: #242633; border-radius: 8px; bottom: 22px; box-shadow: var(--shadow); color: white; max-width: min(420px, calc(100vw - 32px)); opacity: 0; padding: 12px 16px; pointer-events: none; position: fixed; right: 22px; transform: translateY(8px); transition: opacity .2s, transform .2s; z-index: 20; }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    .toast.error { background: #a63740; }
+    .loading { color: var(--muted); padding: 35px; text-align: center; }
+
+    @media (max-width: 950px) {
+      .sidebar { flex-basis: 205px; }
+      .topbar { padding: 0 24px; }
+      .content { padding: 28px 24px 45px; }
+      .metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .dashboard-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 640px) {
+      .shell { display: block; }
+      .sidebar { border-bottom: 1px solid var(--line); border-right: 0; display: block; padding: 12px 13px 9px; position: sticky; top: 0; z-index: 5; }
+      .brand { margin: 0 4px 10px; }
+      .brand-mark { height: 32px; width: 32px; }
+      .brand-name { font-size: 15px; }
+      .brand-caption, .nav-label, .sidebar-bottom { display: none; }
+      .nav { display: flex; gap: 3px; overflow-x: auto; }
+      .nav-button { flex: 0 0 auto; font-size: 11px; gap: 6px; padding: 8px; width: auto; }
+      .nav-icon { font-size: 14px; width: 15px; }
+      .topbar { height: 48px; padding: 0 16px; position: static; }
+      .today { display: none; }
+      .content { padding: 22px 14px 36px; }
+      .page-heading { align-items: flex-start; gap: 12px; }
+      .page-heading > .button { flex: 0 0 auto; }
+      .page-description { font-size: 12px; }
+      .metric { min-height: 112px; padding: 14px; }
+      .metric-value { font-size: 22px; }
+      .metric-top { font-size: 10px; }
+      .metric-icon { height: 30px; width: 30px; }
+      .panel { padding: 15px; }
+      .table-toolbar { align-items: stretch; flex-direction: column; }
+      .search { width: 100%; }
+      .form-grid { grid-template-columns: 1fr; }
+      .field.full { grid-column: auto; }
+      .invoice-item { grid-template-columns: minmax(0, 1fr) 74px 32px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <span class="brand-mark">L</span>
+        <div><div class="brand-name">Ledgerly</div><div class="brand-caption">INVOICE WORKSPACE</div></div>
+      </div>
+      <div class="nav-label">Workspace</div>
+      <nav class="nav" aria-label="Main navigation">
+        <button class="nav-button active" data-page="dashboard"><span class="nav-icon">◫</span>Overview</button>
+        <button class="nav-button" data-page="customers"><span class="nav-icon">♙</span>Customers</button>
+        <button class="nav-button" data-page="products"><span class="nav-icon">▦</span>Products</button>
+        <button class="nav-button" data-page="invoices"><span class="nav-icon">▤</span>Invoices</button>
+        <button class="nav-button" data-page="packing"><span class="nav-icon">▣</span>Packing lists</button>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="local-note"><strong>Business workspace</strong>Manage customers, inventory and invoices from one place.</div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div class="crumb">Workspace <span aria-hidden="true">/</span> <strong id="current-crumb">Overview</strong></div>
+        <div class="top-actions"><span class="today" id="today-label"></span><span class="avatar">IB</span></div>
+      </header>
+
+      <div class="content">
+        <section class="page active" id="page-dashboard">
+          <div class="page-heading">
+            <div><div class="eyebrow">Your business at a glance</div><h1>Overview</h1><p class="page-description">A clear view of your invoices, customers and inventory.</p></div>
+            <button class="button" data-action="new-invoice"><span>＋</span> New invoice</button>
+          </div>
+          <div class="metric-grid">
+            <article class="metric"><div class="metric-top">Total revenue <span class="metric-icon">₹</span></div><div class="metric-value" id="metric-revenue">₹0</div><div class="metric-foot">From completed invoices</div></article>
+            <article class="metric"><div class="metric-top">Invoices <span class="metric-icon">▤</span></div><div class="metric-value" id="metric-invoices">0</div><div class="metric-foot">All-time invoices</div></article>
+            <article class="metric"><div class="metric-top">Customers <span class="metric-icon">♙</span></div><div class="metric-value" id="metric-customers">0</div><div class="metric-foot">In your customer list</div></article>
+            <article class="metric"><div class="metric-top">Products <span class="metric-icon">▦</span></div><div class="metric-value" id="metric-products">0</div><div class="metric-foot">Products in your catalog</div></article>
+          </div>
+          <div class="dashboard-grid">
+            <section class="panel">
+              <div class="panel-heading"><div><div class="panel-title">Revenue overview</div><div class="panel-subtitle">Revenue from your latest invoices</div></div><button class="text-button" data-go="invoices">View invoices →</button></div>
+              <div class="chart" id="revenue-chart"></div>
+            </section>
+            <section class="panel">
+              <div class="panel-heading"><div><div class="panel-title">Stock watch</div><div class="panel-subtitle">Products running low on stock</div></div><button class="text-button" data-go="products">All products →</button></div>
+              <div class="stock-list" id="stock-watch"></div>
+            </section>
+          </div>
+          <section class="panel" style="margin-top:17px">
+            <div class="panel-heading"><div><div class="panel-title">Recent invoices</div><div class="panel-subtitle">The latest activity in your workspace</div></div><button class="text-button" data-go="invoices">See all →</button></div>
+            <div id="recent-invoices"></div>
+          </section>
+        </section>
+
+        <section class="page" id="page-customers">
+          <div class="page-heading"><div><div class="eyebrow">Your relationships</div><h1>Customers</h1><p class="page-description">Keep customer details organized in one place.</p></div><button class="button" data-action="new-customer">＋ Add customer</button></div>
+          <div class="table-card"><div class="table-toolbar"><strong id="customer-count">Customers</strong><input class="search" id="customer-search" placeholder="Search customers..." aria-label="Search customers"></div><div class="table-wrap" id="customers-table"></div></div>
+        </section>
+
+        <section class="page" id="page-products">
+          <div class="page-heading"><div><div class="eyebrow">Your catalog</div><h1>Products</h1><p class="page-description">Manage product details, pricing and available stock.</p></div><button class="button" data-action="new-product">＋ Add product</button></div>
+          <div class="table-card"><div class="table-toolbar"><strong id="product-count">Products</strong><input class="search" id="product-search" placeholder="Search products..." aria-label="Search products"></div><div class="table-wrap" id="products-table"></div></div>
+        </section>
+
+        <section class="page" id="page-invoices">
+          <div class="page-heading"><div><div class="eyebrow">Sales and billing</div><h1>Invoices</h1><p class="page-description">Create invoices and keep track of completed sales.</p></div><button class="button" data-action="new-invoice">＋ Create invoice</button></div>
+          <div class="table-card"><div class="table-toolbar"><strong id="invoice-count">Invoices</strong><input class="search" id="invoice-search" placeholder="Search invoices..." aria-label="Search invoices"></div><div class="table-wrap" id="invoices-table"></div></div>
+        </section>
+
+        <section class="page" id="page-packing">
+          <div class="page-heading"><div><div class="eyebrow">Order fulfillment</div><h1>Packing lists</h1><p class="page-description">Track packing and dispatch progress for every invoice.</p></div></div>
+          <div class="table-card"><div class="table-toolbar"><strong id="packing-count">Packing lists</strong></div><div class="table-wrap" id="packing-table"></div></div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <div class="modal-backdrop" id="modal-backdrop" role="presentation">
+    <section class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <div class="modal-head"><div><div class="modal-title" id="modal-title"></div><div class="modal-description" id="modal-description"></div></div><button class="close-button" id="modal-close" aria-label="Close dialog">×</button></div>
+      <div id="modal-body"></div>
+    </section>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const state = { customers: [], products: [], invoices: [], packing: [] };
+    const names = { dashboard: "Overview", customers: "Customers", products: "Products", invoices: "Invoices", packing: "Packing lists" };
+    const money = value => new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 2 }).format(Number(value || 0));
+    const esc = value => String(value ?? "").replace(/[&<>"']/g, character => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[character]));
+    const initials = value => String(value || "?").trim().split(/\s+/).slice(0, 2).map(part => part[0] || "").join("").toUpperCase();
+
+    async function api(path, options = {}) {
+      const response = await fetch(path, {
+        ...options,
+        headers: { ...(options.body ? { "Content-Type": "application/json" } : {}), ...options.headers },
+      });
+      if (!response.ok) {
+        let message = `Request failed (${response.status})`;
+        try {
+          const error = await response.json();
+          message = typeof error.detail === "string" ? error.detail : JSON.stringify(error.detail || error);
+        } catch { /* Keep the HTTP status when the server does not return JSON. */ }
+        throw new Error(message);
+      }
+      return response.status === 204 ? null : response.json();
+    }
+
+    function notify(message, error = false) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.classList.toggle("error", error);
+      toast.classList.add("show");
+      clearTimeout(notify.timer);
+      notify.timer = setTimeout(() => toast.classList.remove("show"), 3200);
+    }
+
+    function setPage(page) {
+      document.querySelectorAll(".page").forEach(element => element.classList.toggle("active", element.id === `page-${page}`));
+      document.querySelectorAll(".nav-button").forEach(button => button.classList.toggle("active", button.dataset.page === page));
+      document.getElementById("current-crumb").textContent = names[page];
+    }
+
+    function modal(title, description, body) {
+      document.getElementById("modal-title").textContent = title;
+      document.getElementById("modal-description").textContent = description || "";
+      document.getElementById("modal-body").innerHTML = body;
+      document.getElementById("modal-backdrop").classList.add("open");
+      document.querySelector("#modal-body input, #modal-body select")?.focus();
+    }
+
+    function closeModal() {
+      document.getElementById("modal-backdrop").classList.remove("open");
+    }
+
+    function emptyTable(message, columns) {
+      return `<table><thead><tr>${columns.map(column => `<th>${column}</th>`).join("")}</tr></thead><tbody><tr><td class="table-empty" colspan="${columns.length}">${message}</td></tr></tbody></table>`;
+    }
+
+    function renderCustomers(filter = "") {
+      const query = filter.toLowerCase();
+      const rows = state.customers.filter(customer => [customer.customer_name, customer.email, customer.phone, customer.city].some(value => String(value || "").toLowerCase().includes(query)));
+      document.getElementById("customer-count").textContent = `${state.customers.length} ${state.customers.length === 1 ? "customer" : "customers"}`;
+      document.getElementById("customers-table").innerHTML = rows.length ? `
+        <table><thead><tr><th>Customer</th><th>Phone</th><th>City</th><th>Added</th><th style="text-align:right">Actions</th></tr></thead><tbody>
+        ${rows.map(customer => `<tr>
+          <td><div class="cell-main">${esc(customer.customer_name)}</div><div class="cell-sub">${esc(customer.email || "No email")}</div></td>
+          <td>${esc(customer.phone || "—")}</td><td>${esc(customer.city || "—")}</td>
+          <td>${esc(String(customer.created_at || "").slice(0, 10) || "—")}</td>
+          <td><div class="row-actions"><button class="button secondary small" data-edit="customer" data-id="${customer.customer_id}">Edit</button><button class="button danger small" data-delete="customer" data-id="${customer.customer_id}">Delete</button></div></td>
+        </tr>`).join("")}</tbody></table>` : emptyTable(query ? "No matching customers." : "No customers yet. Add your first customer to get started.", ["Customer", "Phone", "City", "Added", "Actions"]);
+    }
+
+    function renderProducts(filter = "") {
+      const query = filter.toLowerCase();
+      const rows = state.products.filter(product => [product.product_name, product.category].some(value => String(value || "").toLowerCase().includes(query)));
+      document.getElementById("product-count").textContent = `${state.products.length} ${state.products.length === 1 ? "product" : "products"}`;
+      document.getElementById("products-table").innerHTML = rows.length ? `
+        <table><thead><tr><th>Product</th><th>Category</th><th>Unit price</th><th>Available stock</th><th style="text-align:right">Actions</th></tr></thead><tbody>
+        ${rows.map(product => `<tr>
+          <td><div class="cell-main">${esc(product.product_name)}</div><div class="cell-sub">ID #${product.product_id}</div></td>
+          <td>${esc(product.category || "Uncategorized")}</td><td>${money(product.unit_price)}</td>
+          <td><span class="status ${Number(product.stock_quantity) <= 5 ? "low" : "completed"}">${Number(product.stock_quantity)} units</span></td>
+          <td><div class="row-actions"><button class="button secondary small" data-edit="product" data-id="${product.product_id}">Edit</button><button class="button danger small" data-delete="product" data-id="${product.product_id}">Delete</button></div></td>
+        </tr>`).join("")}</tbody></table>` : emptyTable(query ? "No matching products." : "No products yet. Add a product to your catalog.", ["Product", "Category", "Unit price", "Available stock", "Actions"]);
+    }
+
+    function renderInvoices(filter = "") {
+      const query = filter.toLowerCase();
+      const rows = state.invoices.filter(invoice => [invoice.invoice_number, invoice.customer_name, invoice.invoice_date].some(value => String(value || "").toLowerCase().includes(query)));
+      document.getElementById("invoice-count").textContent = `${state.invoices.length} ${state.invoices.length === 1 ? "invoice" : "invoices"}`;
+      document.getElementById("invoices-table").innerHTML = rows.length ? `
+        <table><thead><tr><th>Invoice</th><th>Customer</th><th>Date</th><th>Amount</th><th>Status</th><th>Details</th></tr></thead><tbody>
+        ${rows.map(invoice => `<tr>
+          <td><div class="cell-main">${esc(invoice.invoice_number)}</div><div class="cell-sub">#${invoice.invoice_id}</div></td>
+          <td>${esc(invoice.customer_name || "Unknown customer")}</td><td>${esc(invoice.invoice_date)}</td>
+          <td class="cell-main">${money(invoice.total_amount)}</td>
+          <td><span class="status ${String(invoice.status || "Completed").toLowerCase()}">${esc(invoice.status || "Completed")}</span></td>
+          <td><button class="button secondary small" data-invoice-detail="${invoice.invoice_id}">View items</button></td>
+        </tr>`).join("")}</tbody></table>` : emptyTable(query ? "No matching invoices." : "No invoices yet. Create your first invoice.", ["Invoice", "Customer", "Date", "Amount", "Status", "Details"]);
+    }
+
+    function renderPacking(filter = "") {
+      const query = filter.toLowerCase();
+      const rows = state.packing.filter(item => [item.invoice_number, item.customer_name].some(value => String(value || "").toLowerCase().includes(query)));
+      document.getElementById("packing-count").textContent = `${state.packing.length} ${state.packing.length === 1 ? "packing list" : "packing lists"}`;
+      document.getElementById("packing-table").innerHTML = rows.length ? `
+        <table><thead><tr><th>Invoice</th><th>Customer</th><th>Invoice date</th><th>Last updated</th><th>Packing status</th></tr></thead><tbody>
+        ${rows.map(item => `<tr>
+          <td><div class="cell-main">${esc(item.invoice_number)}</div><div class="cell-sub">#${item.invoice_id}</div></td>
+          <td>${esc(item.customer_name || "Unknown customer")}</td><td>${esc(item.invoice_date)}</td>
+          <td>${esc(item.packing_date || "Not packed yet")}</td>
+          <td><select class="table-select" data-packing-id="${item.invoice_id}" aria-label="Packing status for ${esc(item.invoice_number)}">
+            ${["Pending", "Packed", "Dispatched"].map(status => `<option ${item.packing_status === status ? "selected" : ""}>${status}</option>`).join("")}
+          </select></td>
+        </tr>`).join("")}</tbody></table>` : emptyTable(query ? "No matching packing lists." : "Packing lists appear here after you create an invoice.", ["Invoice", "Customer", "Invoice date", "Last updated", "Packing status"]);
+    }
+
+    function renderDashboard() {
+      const revenue = state.invoices.filter(invoice => invoice.status === "Completed").reduce((total, invoice) => total + Number(invoice.total_amount || 0), 0);
+      document.getElementById("metric-revenue").textContent = money(revenue);
+      document.getElementById("metric-invoices").textContent = state.invoices.length.toLocaleString("en-IN");
+      document.getElementById("metric-customers").textContent = state.customers.length.toLocaleString("en-IN");
+      document.getElementById("metric-products").textContent = state.products.length.toLocaleString("en-IN");
+
+      const latest = [...state.invoices].sort((a, b) => String(a.invoice_date).localeCompare(String(b.invoice_date))).slice(-6);
+      const chart = document.getElementById("revenue-chart");
+      if (!latest.length) {
+        chart.innerHTML = `<div class="loading">Create an invoice to see your revenue activity.</div>`;
+      } else {
+        const maximum = Math.max(...latest.map(invoice => Number(invoice.total_amount || 0)), 1);
+        chart.innerHTML = latest.map(invoice => {
+          const amount = Number(invoice.total_amount || 0);
+          const day = String(invoice.invoice_date || "").slice(5);
+          return `<div class="chart-column" title="${esc(invoice.invoice_number)}: ${money(amount)}"><span class="chart-value">${money(amount).replace(/\.\d{2}$/, "")}</span><div class="chart-bar" style="height:${Math.max(7, amount / maximum * 100)}%"></div><span class="chart-month">${esc(day || "—")}</span></div>`;
+        }).join("");
+      }
+
+      const lowStock = state.products.filter(product => Number(product.stock_quantity) <= 5).sort((a, b) => Number(a.stock_quantity) - Number(b.stock_quantity)).slice(0, 5);
+      document.getElementById("stock-watch").innerHTML = lowStock.length ? lowStock.map(product => `<div class="stock-row"><div class="stock-avatar">${esc(initials(product.product_name))}</div><div class="stock-info"><div class="stock-name">${esc(product.product_name)}</div><div class="stock-category">${esc(product.category || "Uncategorized")}</div></div><span class="stock-count">${Number(product.stock_quantity)} left</span></div>`).join("") : `<div class="loading">Everything is stocked up.</div>`;
+
+      const recent = [...state.invoices].sort((a, b) => b.invoice_id - a.invoice_id).slice(0, 5);
+      document.getElementById("recent-invoices").innerHTML = recent.length ? `<div class="table-wrap"><table><thead><tr><th>Invoice</th><th>Customer</th><th>Date</th><th>Amount</th><th>Status</th></tr></thead><tbody>${recent.map(invoice => `<tr><td class="cell-main">${esc(invoice.invoice_number)}</td><td>${esc(invoice.customer_name || "Unknown customer")}</td><td>${esc(invoice.invoice_date)}</td><td class="cell-main">${money(invoice.total_amount)}</td><td><span class="status completed">${esc(invoice.status || "Completed")}</span></td></tr>`).join("")}</tbody></table></div>` : `<div class="table-empty">Your latest invoices will appear here.</div>`;
+    }
+
+    async function refresh() {
+      const [customers, products, invoices, packing] = await Promise.all([
+        api("/customers"), api("/products"), api("/invoices"), api("/packing-lists"),
+      ]);
+      state.customers = customers;
+      state.products = products;
+      state.invoices = invoices;
+      state.packing = packing;
+      renderCustomers(document.getElementById("customer-search").value);
+      renderProducts(document.getElementById("product-search").value);
+      renderInvoices(document.getElementById("invoice-search").value);
+      renderPacking();
+      renderDashboard();
+    }
+
+    function customerForm(customer = {}) {
+      const editing = Boolean(customer.customer_id);
+      modal(editing ? "Edit customer" : "Add a customer", editing ? "Update the customer contact details." : "Add a customer to your business records.", `
+        <form id="customer-form"><div class="form-grid">
+          <div class="field full"><label for="customer-name">Customer name *</label><input id="customer-name" name="customer_name" required maxlength="150" value="${esc(customer.customer_name || "")}" placeholder="e.g. Acme Retail"></div>
+          <div class="field"><label for="customer-phone">Phone</label><input id="customer-phone" name="phone" maxlength="50" value="${esc(customer.phone || "")}" placeholder="Phone number"></div>
+          <div class="field"><label for="customer-email">Email</label><input id="customer-email" name="email" type="email" maxlength="254" value="${esc(customer.email || "")}" placeholder="name@example.com"></div>
+          <div class="field full"><label for="customer-city">City</label><input id="customer-city" name="city" maxlength="100" value="${esc(customer.city || "")}" placeholder="City"></div>
+        </div><div class="form-footer"><button class="button" type="submit">${editing ? "Save changes" : "Add customer"}</button></div></form>`);
+      document.getElementById("customer-form").addEventListener("submit", async event => {
+        event.preventDefault();
+        const values = Object.fromEntries(new FormData(event.currentTarget));
+        Object.keys(values).forEach(key => { if (!values[key]) values[key] = null; });
+        values.customer_name = values.customer_name.trim();
+        await submit(async () => {
+          await api(editing ? `/customers/${customer.customer_id}` : "/customers", { method: editing ? "PATCH" : "POST", body: JSON.stringify(values) });
+          closeModal();
+          notify(editing ? "Customer updated." : "Customer added.");
+          await refresh();
+        });
+      });
+    }
+
+    function productForm(product = {}) {
+      const editing = Boolean(product.product_id);
+      modal(editing ? "Edit product" : "Add a product", editing ? "Update product details and inventory." : "Add an item to your product catalog.", `
+        <form id="product-form"><div class="form-grid">
+          <div class="field full"><label for="product-name">Product name *</label><input id="product-name" name="product_name" required maxlength="150" value="${esc(product.product_name || "")}" placeholder="e.g. Classic notebook"></div>
+          <div class="field"><label for="product-category">Category</label><input id="product-category" name="category" maxlength="100" value="${esc(product.category || "")}" placeholder="Stationery"></div>
+          <div class="field"><label for="product-price">Unit price (₹) *</label><input id="product-price" name="unit_price" type="number" min="0" step="0.01" required value="${esc(product.unit_price ?? "")}"></div>
+          <div class="field"><label for="product-stock">Available stock *</label><input id="product-stock" name="stock_quantity" type="number" min="0" step="1" required value="${esc(product.stock_quantity ?? 0)}"></div>
+        </div><div class="form-footer"><button class="button" type="submit">${editing ? "Save changes" : "Add product"}</button></div></form>`);
+      document.getElementById("product-form").addEventListener("submit", async event => {
+        event.preventDefault();
+        const form = new FormData(event.currentTarget);
+        const values = { product_name: form.get("product_name").trim(), category: form.get("category") || null, unit_price: Number(form.get("unit_price")), stock_quantity: Number(form.get("stock_quantity")) };
+        await submit(async () => {
+          await api(editing ? `/products/${product.product_id}` : "/products", { method: editing ? "PATCH" : "POST", body: JSON.stringify(values) });
+          closeModal();
+          notify(editing ? "Product updated." : "Product added.");
+          await refresh();
+        });
+      });
+    }
+
+    function addInvoiceItem() {
+      const list = document.getElementById("invoice-items");
+      const options = state.products.map(product => `<option value="${product.product_id}" data-price="${product.unit_price}" data-stock="${product.stock_quantity}">${esc(product.product_name)} · ${money(product.unit_price)} · ${product.stock_quantity} in stock</option>`).join("");
+      const row = document.createElement("div");
+      row.className = "invoice-item";
+      row.innerHTML = `<div class="field"><label>Product</label><select class="invoice-product" required><option value="">Select a product</option>${options}</select></div><div class="field"><label>Quantity</label><input class="invoice-quantity" type="number" min="1" value="1" required></div><button type="button" class="remove-item" aria-label="Remove item">×</button>`;
+      list.appendChild(row);
+      row.querySelector(".remove-item").addEventListener("click", () => { row.remove(); updateInvoiceTotal(); });
+      row.querySelectorAll("select, input").forEach(input => input.addEventListener("input", updateInvoiceTotal));
+    }
+
+    function updateInvoiceTotal() {
+      let subtotal = 0;
+      document.querySelectorAll(".invoice-item").forEach(row => {
+        const option = row.querySelector(".invoice-product").selectedOptions[0];
+        const quantity = Number(row.querySelector(".invoice-quantity").value || 0);
+        if (option?.dataset.price && quantity > 0) subtotal += Number(option.dataset.price) * quantity;
+      });
+      const tax = Number(document.getElementById("invoice-tax")?.value || 0);
+      document.getElementById("invoice-total").textContent = money(subtotal + subtotal * tax / 100);
+    }
+
+    function invoiceForm() {
+      if (!state.customers.length || !state.products.length) {
+        notify("Add a customer and an in-stock product before creating an invoice.", true);
+        return;
+      }
+      const customers = state.customers.map(customer => `<option value="${customer.customer_id}">${esc(customer.customer_name)}</option>`).join("");
+      modal("Create an invoice", "Choose a customer and add the products being purchased.", `
+        <form id="invoice-form">
+          <div class="form-grid">
+            <div class="field"><label for="invoice-customer">Customer *</label><select id="invoice-customer" required><option value="">Select a customer</option>${customers}</select></div>
+            <div class="field"><label for="invoice-date">Invoice date *</label><input id="invoice-date" type="date" required value="${new Date().toISOString().slice(0, 10)}"></div>
+          </div>
+          <div class="panel-heading" style="margin:20px 0 0"><div><div class="panel-title">Invoice items</div><div class="panel-subtitle">Only available stock can be invoiced.</div></div><button class="button secondary small" id="add-invoice-item" type="button">＋ Add item</button></div>
+          <div class="invoice-items" id="invoice-items"></div>
+          <div class="form-grid"><div class="field"><label for="invoice-tax">Tax rate (%)</label><input id="invoice-tax" type="number" min="0" max="100" step="0.1" value="0"></div></div>
+          <div class="invoice-summary"><span>Estimated total</span><strong id="invoice-total">${money(0)}</strong></div>
+          <div class="form-footer"><button class="button" type="submit">Create invoice</button></div>
+        </form>`);
+      addInvoiceItem();
+      document.getElementById("add-invoice-item").addEventListener("click", addInvoiceItem);
+      document.getElementById("invoice-tax").addEventListener("input", updateInvoiceTotal);
+      document.getElementById("invoice-form").addEventListener("submit", async event => {
+        event.preventDefault();
+        const rows = [...document.querySelectorAll(".invoice-item")];
+        if (!rows.length) { notify("Add at least one invoice item.", true); return; }
+        const items = rows.map(row => ({ product_id: Number(row.querySelector(".invoice-product").value), quantity: Number(row.querySelector(".invoice-quantity").value) }));
+        const invalid = rows.some(row => {
+          const option = row.querySelector(".invoice-product").selectedOptions[0];
+          return !option?.value || Number(row.querySelector(".invoice-quantity").value) > Number(option.dataset.stock);
+        });
+        if (invalid) { notify("Select a product and keep quantities within available stock.", true); return; }
+        const payload = {
+          customer_id: Number(document.getElementById("invoice-customer").value),
+          invoice_date: document.getElementById("invoice-date").value,
+          tax_rate: Number(document.getElementById("invoice-tax").value || 0),
+          items,
+        };
+        await submit(async () => {
+          const invoice = await api("/invoices", { method: "POST", body: JSON.stringify(payload) });
+          closeModal();
+          notify(`Invoice ${invoice.invoice_number} created.`);
+          await refresh();
+          setPage("invoices");
+        });
+      });
+    }
+
+    async function submit(action) {
+      const button = document.querySelector("#modal-body button[type='submit']");
+      if (button) { button.disabled = true; button.textContent = "Saving…"; }
+      try { await action(); }
+      catch (error) { notify(error.message || "Something went wrong.", true); if (button) { button.disabled = false; button.textContent = "Try again"; } }
+    }
+
+    async function showInvoiceDetail(id, button) {
+      const existing = document.querySelector(`[data-detail-for="${id}"]`);
+      if (existing) { existing.remove(); button.textContent = "View items"; return; }
+      button.disabled = true;
+      try {
+        const invoice = await api(`/invoices/${id}`);
+        const row = button.closest("tr");
+        const detailRow = document.createElement("tr");
+        detailRow.className = "detail-row";
+        detailRow.dataset.detailFor = id;
+        const cell = document.createElement("td");
+        cell.colSpan = 6;
+        const items = document.createElement("div");
+        items.className = "detail-items";
+        (invoice.items || []).forEach(item => {
+          const line = document.createElement("div");
+          line.textContent = `${item.product_name} · ${item.quantity} × ${money(item.unit_price)} = ${money(item.line_total)}`;
+          items.appendChild(line);
+        });
+        const summary = document.createElement("strong");
+        summary.textContent = `Subtotal ${money(invoice.subtotal)} · Tax ${money(invoice.tax_amount)} · Total ${money(invoice.total_amount)}`;
+        cell.append(items, summary);
+        detailRow.appendChild(cell);
+        row.after(detailRow);
+        button.textContent = "Hide items";
+      } catch (error) { notify(error.message, true); }
+      finally { button.disabled = false; }
+    }
+
+    async function deleteRecord(type, id) {
+      const record = type === "customer" ? state.customers.find(item => item.customer_id === id) : state.products.find(item => item.product_id === id);
+      const name = record?.customer_name || record?.product_name || "this record";
+      if (!confirm(`Delete ${name}? This cannot be undone.`)) return;
+      try {
+        await api(`/${type === "customer" ? "customers" : "products"}/${id}`, { method: "DELETE" });
+        notify(`${type === "customer" ? "Customer" : "Product"} deleted.`);
+        await refresh();
+      } catch (error) { notify(error.message, true); }
+    }
+
+    document.querySelectorAll(".nav-button").forEach(button => button.addEventListener("click", () => setPage(button.dataset.page)));
+    document.querySelectorAll("[data-go]").forEach(button => button.addEventListener("click", () => setPage(button.dataset.go)));
+    document.querySelectorAll("[data-action]").forEach(button => button.addEventListener("click", () => {
+      if (button.dataset.action === "new-customer") customerForm();
+      if (button.dataset.action === "new-product") productForm();
+      if (button.dataset.action === "new-invoice") invoiceForm();
+    }));
+    document.getElementById("modal-close").addEventListener("click", closeModal);
+    document.getElementById("modal-backdrop").addEventListener("click", event => { if (event.target.id === "modal-backdrop") closeModal(); });
+    document.addEventListener("keydown", event => { if (event.key === "Escape") closeModal(); });
+    document.getElementById("customer-search").addEventListener("input", event => renderCustomers(event.target.value));
+    document.getElementById("product-search").addEventListener("input", event => renderProducts(event.target.value));
+    document.getElementById("invoice-search").addEventListener("input", event => renderInvoices(event.target.value));
+    document.addEventListener("click", event => {
+      const edit = event.target.closest("[data-edit]");
+      if (edit) {
+        const id = Number(edit.dataset.id);
+        if (edit.dataset.edit === "customer") customerForm(state.customers.find(item => item.customer_id === id));
+        else productForm(state.products.find(item => item.product_id === id));
+      }
+      const remove = event.target.closest("[data-delete]");
+      if (remove) deleteRecord(remove.dataset.delete, Number(remove.dataset.id));
+      const detail = event.target.closest("[data-invoice-detail]");
+      if (detail) showInvoiceDetail(Number(detail.dataset.invoiceDetail), detail);
+    });
+    document.addEventListener("change", async event => {
+      const select = event.target.closest("[data-packing-id]");
+      if (!select) return;
+      const previous = state.packing.find(item => item.invoice_id === Number(select.dataset.packingId))?.packing_status;
+      select.disabled = true;
+      try {
+        await api(`/packing-lists/${select.dataset.packingId}`, { method: "PATCH", body: JSON.stringify({ packing_status: select.value }) });
+        notify("Packing status updated.");
+        await refresh();
+      } catch (error) {
+        notify(error.message, true);
+        select.value = previous || "Pending";
+      } finally { select.disabled = false; }
+    });
+
+    document.getElementById("today-label").textContent = new Intl.DateTimeFormat("en-IN", { dateStyle: "medium" }).format(new Date());
+    refresh().catch(error => {
+      document.getElementById("recent-invoices").innerHTML = `<div class="table-empty">Could not load workspace data: ${esc(error.message)}. Refresh the page to try again.</div>`;
+      notify(`Could not connect to the API: ${error.message}`, true);
+    });
+  </script>
+</body>
+</html>
