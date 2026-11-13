@@ -95,6 +95,15 @@ def health() -> dict:
     return {"status": "ok"}
 
 
+@app.get("/")
+def root() -> dict:
+    return {
+        "name": "Invoice Business Analytics API",
+        "docs": "/docs",
+        "health": "/health",
+    }
+
+
 @app.get("/customers")
 def list_customers() -> List[dict]:
     with database_connection() as connection:

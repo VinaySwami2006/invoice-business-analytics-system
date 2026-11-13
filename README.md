@@ -49,6 +49,7 @@ The application helps organize business information, generate invoices, monitor 
 
 - **Python** — Application logic
 - **Streamlit** — User interface
+- **FastAPI** — REST API backend
 - **SQLite** — Database management
 - **Pandas** — Data processing and analysis
 - **Matplotlib** — Data visualization
@@ -118,6 +119,12 @@ python -m venv .venv
 python -m pip install -r requirements.txt
 ```
 
+For the Streamlit UI as well as the API, install its additional dependencies:
+
+```bash
+python -m pip install -r streamlit-requirements.txt
+```
+
 ### Step 6: Run the Application
 
 ```bash
@@ -129,8 +136,8 @@ Streamlit will provide a local URL in the terminal. Open that URL in your browse
 ## Running the Local API Backend
 
 The project also includes a FastAPI backend that uses the same SQLite database as
-the Streamlit app. Start it in a second terminal after installing the project
-dependencies:
+the Streamlit app. Start it in a second terminal after installing
+`requirements.txt`:
 
 ```bash
 python -m uvicorn backend:app --reload
@@ -152,6 +159,9 @@ try to load the Streamlit `app.py` as a Python function.
 To deploy, import this GitHub repository into Vercel and deploy from the
 repository root. The API's interactive documentation is available at
 `/docs` on the resulting deployment.
+
+Vercel installs the API-only dependencies from `requirements.txt`; the
+Streamlit UI packages are listed separately in `streamlit-requirements.txt`.
 
 **Demo limitation:** Vercel uses temporary `/tmp` storage for SQLite. Data is
 not guaranteed to persist across function instances, cold starts, or

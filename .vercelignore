@@ -1,0 +1,15 @@
+.venv/
+venv/
+env/
+.vercel/
+__pycache__/
+*.py[cod]
+app.py
+pages/
+notebooks/
+reports/
+data/*.db
+data/*.sqlite
+data/*.sqlite3
+streamlit-requirements.txt
+check_database.py

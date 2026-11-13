@@ -35,3 +35,4 @@ desktop.ini
 data/*.db
 data/*.sqlite
 data/*.sqlite3
+.vercel
