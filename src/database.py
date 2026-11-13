@@ -1,12 +1,17 @@
 import sqlite3
 from contextlib import closing
+import os
 from pathlib import Path
+import tempfile
 
 # Project root directory
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Store the database inside the data folder
-DATA_DIR = BASE_DIR / "data"
+# Vercel Functions can only write to temporary storage.
+if os.environ.get("VERCEL") == "1":
+    DATA_DIR = Path(tempfile.gettempdir()) / "invoice-business-analytics-system"
+else:
+    DATA_DIR = BASE_DIR / "data"
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 
 DB_PATH = DATA_DIR / "business.db"

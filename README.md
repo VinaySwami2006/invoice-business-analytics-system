@@ -60,6 +60,7 @@ The application helps organize business information, generate invoices, monitor 
 Invoice_Business_Analytics_System/
 │
 ├── app.py
+├── backend.py
 ├── requirements.txt
 ├── README.md
 ├── .gitignore
@@ -125,19 +126,45 @@ python -m streamlit run app.py
 
 Streamlit will provide a local URL in the terminal. Open that URL in your browser to use the application.
 
-## Deploying to Streamlit Community Cloud
+## Running the Local API Backend
 
-This project uses Streamlit and should be deployed to a Streamlit-compatible host,
-not as a Vercel Python function.
+The project also includes a FastAPI backend that uses the same SQLite database as
+the Streamlit app. Start it in a second terminal after installing the project
+dependencies:
 
-1. Push the project to a GitHub repository.
-2. In [Streamlit Community Cloud](https://share.streamlit.io/), create an app from
-   that repository and select `app.py` as the entry point.
-3. Deploy. Streamlit Cloud installs the packages listed in `requirements.txt`.
+```bash
+python -m uvicorn backend:app --reload
+```
 
-The app creates its SQLite tables when it starts. SQLite data is stored on the
-app's local filesystem and is not durable across all redeployments or host
-restarts. Use a persistent database service for business data that must be kept.
+The API is available at `http://127.0.0.1:8000`; its interactive endpoint
+documentation is at `http://127.0.0.1:8000/docs`. It provides customer and
+product management, invoice creation and lookup, and packing-list status routes.
+The Streamlit screens continue to use their existing database code; they do not
+call the API. This API has no authentication and is intended for local use only;
+keep it bound to `127.0.0.1` and do not expose it to the public internet.
+
+## Deploying the API to Vercel
+
+Vercel deploys the FastAPI backend only; it does not host the Streamlit UI. The
+`pyproject.toml` entrypoint explicitly selects `backend:app` so Vercel does not
+try to load the Streamlit `app.py` as a Python function.
+
+To deploy, import this GitHub repository into Vercel and deploy from the
+repository root. The API's interactive documentation is available at
+`/docs` on the resulting deployment.
+
+**Demo limitation:** Vercel uses temporary `/tmp` storage for SQLite. Data is
+not guaranteed to persist across function instances, cold starts, or
+deployments. The API currently has no authentication, so do not use this demo
+deployment with real or sensitive business data. Use a persistent database and
+authentication before production use.
+
+## Deploying the Streamlit UI
+
+The full UI should be deployed to a Streamlit-compatible host. In
+[Streamlit Community Cloud](https://share.streamlit.io/), create an app from
+this repository and select `app.py` as the entry point. Streamlit Cloud installs
+the packages listed in `requirements.txt`.
 
 ## Database
 
